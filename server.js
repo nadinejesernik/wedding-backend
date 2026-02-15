@@ -1,17 +1,23 @@
+// server.js (Render-friendly, works WITH or WITHOUT a persistent disk)
+
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const cors = require("cors");
 const path = require("path");
+const os = require("os");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Allow requests from your website to your backend
 app.use(cors());
 app.use(express.json());
 
-// Use Render persistent disk if provided, otherwise local file
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, "rsvps.db");
+/**
+ * SQLite path strategy:
+ * - If you ever get a persistent disk, set DB_PATH (e.g. /var/data/rsvps.db)
+ * - Otherwise (Render free, no disk), use a writable temp directory (/tmp)
+ */
+const DB_PATH = process.env.DB_PATH || path.join(os.tmpdir(), "rsvps.db");
 
 // Create / open database
 const db = new sqlite3.Database(DB_PATH);
@@ -56,7 +62,7 @@ app.post("/rsvp", (req, res) => {
   );
 });
 
-// List RSVPs (simple admin endpoint)
+// List RSVPs (JSON)
 app.get("/rsvps", (req, res) => {
   db.all(
     `SELECT id, code, name, attending, dietary, message, created_at
@@ -147,6 +153,10 @@ app.get("/admin", (req, res) => {
               ${tableRows || `<tr><td colspan="6" class="small">No RSVPs yet.</td></tr>`}
             </tbody>
           </table>
+
+          <p class="small" style="margin-top:16px;">
+            DB path: <code>${escapeHtml(DB_PATH)}</code>
+          </p>
         </body>
         </html>
       `);
