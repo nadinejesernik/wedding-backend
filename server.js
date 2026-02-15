@@ -1,15 +1,20 @@
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+// Allow requests from your website to your backend
 app.use(cors());
 app.use(express.json());
 
+// Use Render persistent disk if provided, otherwise local file
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, "rsvps.db");
+
 // Create / open database
-const db = new sqlite3.Database("rsvps.db");
+const db = new sqlite3.Database(DB_PATH);
 
 // Create table if not exists
 db.run(`
@@ -31,15 +36,13 @@ app.get("/", (req, res) => {
 
 // Save RSVP
 app.post("/rsvp", (req, res) => {
-
   const { code, name, attending, dietary, message } = req.body;
 
   db.run(
     `INSERT INTO rsvps (code, name, attending, dietary, message)
      VALUES (?, ?, ?, ?, ?)`,
     [code, name, attending, dietary, message],
-    function(err) {
-
+    function (err) {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: "Database error" });
@@ -47,12 +50,10 @@ app.post("/rsvp", (req, res) => {
 
       res.json({
         success: true,
-        id: this.lastID
+        id: this.lastID,
       });
-
     }
   );
-
 });
 
 // List RSVPs (simple admin endpoint)
@@ -91,7 +92,9 @@ app.get("/admin", (req, res) => {
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#039;");
 
-      const tableRows = rows.map(r => `
+      const tableRows = rows
+        .map(
+          (r) => `
         <tr>
           <td>${escapeHtml(r.created_at)}</td>
           <td>${escapeHtml(r.code)}</td>
@@ -100,7 +103,9 @@ app.get("/admin", (req, res) => {
           <td>${escapeHtml(r.dietary)}</td>
           <td>${escapeHtml(r.message)}</td>
         </tr>
-      `).join("");
+      `
+        )
+        .join("");
 
       res.send(`
         <!doctype html>
@@ -117,7 +122,6 @@ app.get("/admin", (req, res) => {
             th, td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
             th { background: #f6f6f6; text-align: left; }
             tr:nth-child(even) { background: #fafafa; }
-            .wrap { white-space: pre-wrap; }
             .small { font-size: 12px; color: #666; }
             code { background: #f2f2f2; padding: 2px 6px; border-radius: 6px; }
           </style>
@@ -152,5 +156,6 @@ app.get("/admin", (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`DB path: ${DB_PATH}`);
 });
