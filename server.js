@@ -227,7 +227,7 @@ app.get("/admin", (req, res) => {
             <table>
               <thead>
                 <tr>
-                  <th>Submitted</th><th>Code</th><th>Party</th><th>Attendance</th><th>Dietary</th><th>Message</th>
+                  <th>Submitted</th><th>Code</th><th>Party</th><th>Attendance</th><th>Dietary</th><th>Message</th><th>Delete</th>
                 </tr>
               </thead>
               <tbody>
