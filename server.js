@@ -185,15 +185,21 @@ app.get("/admin", (req, res) => {
           .replaceAll("'", "&#039;");
 
       const tableRows = rows.map(r => `
-        <tr>
-          <td>${esc(r.created_at)}</td>
-          <td>${esc(r.code)}</td>
-          <td>${esc(r.name)}</td>
-          <td>${esc(r.attending)}</td>
-          <td>${esc(r.dietary)}</td>
-          <td>${esc(r.message)}</td>
-        </tr>
-      `).join("");
+  <tr>
+    <td>${esc(r.created_at)}</td>
+    <td>${esc(r.code)}</td>
+    <td>${esc(r.name)}</td>
+    <td>${esc(r.attending)}</td>
+    <td>${esc(r.dietary)}</td>
+    <td>${esc(r.message)}</td>
+    <td>
+      <button onclick="deleteRsvp(${r.id})"
+              style="padding:6px 10px;border-radius:8px;border:1px solid #ccc;cursor:pointer;">
+        Delete
+      </button>
+    </td>
+  </tr>
+`).join("");
 
       res.send(`
         <!doctype html>
@@ -229,6 +235,30 @@ app.get("/admin", (req, res) => {
               </tbody>
             </table>
             <p><small>DB: <code>${esc(DB_PATH)}</code></small></p>
+            <script>
+
+async function deleteRsvp(id) {
+
+  if (!confirm("Delete this RSVP?")) return;
+
+  try {
+
+   const res = await fetch('/rsvp/' + id, {
+  method: "DELETE"
+});
+
+    const data = await res.json();
+
+    if (data.success) {
+      location.reload();
+    } else {
+      alert("Delete failed.");
+    }
+  } catch (err) {
+    alert("Error deleting RSVP.");
+  }
+}
+</script>
           </body>
         </html>
       `);
