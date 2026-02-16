@@ -135,8 +135,16 @@ app.get("/admin", (req, res) => {
         <body>
           <h1>RSVP Responses</h1>
           <div class="meta">
-            View JSON at <code>/rsvps</code>
-          </div>
+  View JSON at <code>/rsvps</code>
+  <div style="margin-top:10px;">
+    <a href="/export.csv" style="display:inline-block;padding:8px 12px;border:1px solid #ddd;border-radius:10px;text-decoration:none;margin-right:8px;">
+      Download CSV
+    </a>
+    <a href="/export.json" style="display:inline-block;padding:8px 12px;border:1px solid #ddd;border-radius:10px;text-decoration:none;">
+      Download JSON
+    </a>
+  </div>
+</div>
 
           <table>
             <thead>
@@ -160,6 +168,67 @@ app.get("/admin", (req, res) => {
         </body>
         </html>
       `);
+    }
+  );
+});
+
+// Export RSVPs as JSON (backup)
+app.get("/export.json", (req, res) => {
+  db.all(
+    `SELECT id, code, name, attending, dietary, message, created_at
+     FROM rsvps
+     ORDER BY created_at DESC`,
+    (err, rows) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      const filename = `wedding-rsvps-${new Date().toISOString().slice(0, 10)}.json`;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send(JSON.stringify(rows, null, 2));
+    }
+  );
+});
+
+// Export RSVPs as CSV (backup)
+app.get("/export.csv", (req, res) => {
+  db.all(
+    `SELECT id, code, name, attending, dietary, message, created_at
+     FROM rsvps
+     ORDER BY created_at DESC`,
+    (err, rows) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send("Database error");
+      }
+
+      const escapeCsv = (value) => {
+        const s = String(value ?? "");
+        // Wrap in quotes if it contains comma, quote, or newline
+        if (/[",\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
+        return s;
+      };
+
+      const header = ["id", "created_at", "code", "name", "attending", "dietary", "message"];
+      const lines = [
+        header.join(","),
+        ...rows.map(r => [
+          r.id,
+          r.created_at,
+          r.code,
+          r.name,
+          r.attending,
+          r.dietary,
+          r.message
+        ].map(escapeCsv).join(","))
+      ];
+
+      const filename = `wedding-rsvps-${new Date().toISOString().slice(0, 10)}.csv`;
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send(lines.join("\n"));
     }
   );
 });
