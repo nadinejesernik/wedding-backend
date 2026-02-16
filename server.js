@@ -84,6 +84,31 @@ app.get("/rsvps", (req, res) => {
   );
 });
 
+// Delete RSVP by ID
+app.delete("/rsvp/:id", (req, res) => {
+
+  const id = req.params.id;
+
+  db.run(
+    "DELETE FROM rsvps WHERE id = ?",
+    [id],
+    function(err) {
+
+      if (err) {
+        console.error("Delete failed:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      res.json({
+        success: true,
+        deleted: this.changes
+      });
+
+    }
+  );
+
+});
+
 // Export JSON
 app.get("/export.json", (req, res) => {
   db.all(
